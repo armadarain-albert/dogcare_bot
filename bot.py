@@ -1,10 +1,10 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 from openai import OpenAI
+import os
 
-TELEGRAM_TOKEN = "8551970999:AAExkhw1NGu5uBM2TWYMTZOVRazOrhzMxjM"
-OPENAI_KEY = "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"
-
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+OPENAI_KEY = os.environ.get("OPENAI_KEY")
 client = OpenAI(api_key=OPENAI_KEY)
 
 SYSTEM_PROMPT = """
