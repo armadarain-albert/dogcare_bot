@@ -3,18 +3,18 @@ from openai import OpenAI
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Берём ключи из переменных окружения
+# Переменные окружения
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Инициализируем OpenAI клиент
+# Клиент OpenAI
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Я бот-помощник для собак 🐶")
+    await update.message.reply_text("Привет! Я бот-помощник 🐶")
 
-# Ответ на любое сообщение
+# Любое текстовое сообщение
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
 
@@ -26,18 +26,16 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         answer = response.choices[0].message.content
     except Exception as e:
-        answer = f"Произошла ошибка при обращении к OpenAI: {e}"
+        answer = f"Ошибка OpenAI: {e}"
 
     await update.message.reply_text(answer)
 
-# Создаём приложение Telegram
+# Создание приложения Telegram (без Updater)
 app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
-# Добавляем обработчики
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
-# Запускаем бота
 if __name__ == "__main__":
     print("Бот запущен...")
     app.run_polling()
