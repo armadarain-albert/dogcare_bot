@@ -1,43 +1,31 @@
-from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
-from openai import OpenAI
 import os
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from openai import OpenAI
 
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+# Берём ключи из переменных окружения
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+
+# Проверка наличия ключей
+if not OPENAI_KEY:
+    raise ValueError("OPENAI_API_KEY не найден в переменных окружения!")
+if not TELEGRAM_TOKEN:
+    raise ValueError("TELEGRAM_TOKEN не найден в переменных окружения!")
+
+# Инициализация клиента OpenAI
 client = OpenAI(api_key=OPENAI_KEY)
 
-SYSTEM_PROMPT = """
-Ты AI ассистент ветеринара и кинолога.
-
-Помогаешь владельцам собак понять здоровье и поведение их питомцев.
-
-Правила:
-- отвечай простым языком
-- не ставь окончательный диагноз
-- если есть риск для здоровья — советуй обратиться к ветеринару
-- при необходимости задавай уточняющие вопросы
-"""
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    user_message = update.message.text
-
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message}
-        ]
+# Функция для команды /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Привет! Я бот-помощник по уходу за собаками 🐶\n"
+        "Задавай вопросы о поведении, кормлении или здоровье своей собаки."
     )
 
-    reply = response.choices[0].message.content
-
-    await update.message.reply_text(reply)
-
+# Простейший обработчик команд
 app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+app.add_handler(CommandHandler("start", start))
 
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
+# Запуск бота
 app.run_polling()
