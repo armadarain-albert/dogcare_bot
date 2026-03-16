@@ -3,18 +3,24 @@ from openai import OpenAI
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Переменные окружения
+# Читаем переменные окружения
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Клиент OpenAI
+if not TELEGRAM_TOKEN or not OPENAI_API_KEY:
+    raise Exception("Не задан TELEGRAM_TOKEN или OPENAI_API_KEY")
+
+# Инициализация клиента OpenAI
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# /start
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Я бот-помощник 🐶")
+    await update.message.reply_text(
+        "Привет! Я AI‑ассистент для собак 🐶\n"
+        "Задавай вопросы о поведении, уходе или здоровье."
+    )
 
-# Любое текстовое сообщение
+# Обработчик любых текстовых сообщений
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
 
@@ -26,11 +32,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         answer = response.choices[0].message.content
     except Exception as e:
-        answer = f"Ошибка OpenAI: {e}"
+        answer = f"Произошла ошибка при запросе к OpenAI:\n{e}"
 
     await update.message.reply_text(answer)
 
-# Создание приложения Telegram (без Updater)
+# Собираем приложение Telegram
 app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
