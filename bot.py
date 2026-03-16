@@ -1,47 +1,56 @@
 import os
+import logging
 from openai import OpenAI
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-# Читаем переменные окружения
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# Логи
+logging.basicConfig(level=logging.INFO)
 
-if not TELEGRAM_TOKEN or not OPENAI_API_KEY:
-    raise Exception("Не задан TELEGRAM_TOKEN или OPENAI_API_KEY")
+# Токены из окружения Railway
+TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 
-# Инициализация клиента OpenAI
+# Клиент OpenAI
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Команда /start
+# Приветствие
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Привет! Я AI‑ассистент для собак 🐶\n"
-        "Задавай вопросы о поведении, уходе или здоровье."
+        "Привет! Я твой бот-помощник по собакам. "
+        "Можешь задавать вопросы о поведении, тренировке, здоровье или уходе за собакой."
     )
 
 # Обработчик любых текстовых сообщений
-async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_message = update.message.text
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_text = update.message.text
+
+    # Добавляем системное сообщение, чтобы OpenAI отвечал как эксперт по собакам
+    messages = [
+        {"role": "system", "content": "Ты эксперт по собакам. Даёшь полезные и практичные советы владельцам собак."},
+        {"role": "user", "content": user_text}
+    ]
 
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_message}],
-            max_tokens=200
+            messages=messages
         )
         answer = response.choices[0].message.content
     except Exception as e:
-        answer = f"Произошла ошибка при запросе к OpenAI:\n{e}"
+        answer = f"Произошла ошибка при обращении к OpenAI: {e}"
 
     await update.message.reply_text(answer)
 
-# Собираем приложение Telegram
-app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+# Основная функция
+def main():
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    logging.info("Бот-помощник по собакам запущен...")
+    app.run_polling()
 
 if __name__ == "__main__":
-    print("Бот запущен...")
-    app.run_polling()
+    main()
